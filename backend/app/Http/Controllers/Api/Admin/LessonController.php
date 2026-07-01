@@ -10,12 +10,21 @@ use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLessonRequest;
 use App\Models\Lesson;
+use App\Services\FileUploader;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+
 
 class LessonController extends BaseApiController
 {
 
+    protected FileUploader $uploader;
+    public function __construct(FileUploader $uploader)
+    {
+        $this->uploader = $uploader;
+    }
     public function index(Request $request)
     {
         try {
@@ -73,10 +82,30 @@ class LessonController extends BaseApiController
         }
     }
 
-    public function update(StoreLessonRequest $request, Lesson $lesson)
+    public function update(StoreLessonRequest $request, Lesson $lesson): JsonResponse
     {
         try {
             $data = $request->validated();
+
+
+            // ۱. بررسی فایل ویدیو: اگر آدرس ویدیو در درخواست جدید متفاوت از دیتابیس بود
+            if (isset($data['video_url']) && $data['video_url'] !== $lesson->video_url) {
+                // حذف ویدیوی قدیمی از روی هارد سرور
+                $this->uploader->delete($lesson->video_url);
+            }
+
+            // ۲. بررسی فایل صوتی: اگر آدرس فایل صوتی جدید متفاوت از قبلی بود
+            if (isset($data['audio_url']) && $data['audio_url'] !== $lesson->audio_url) {
+                // حذف فایل صوتی قدیمی
+                $this->uploader->delete($lesson->audio_url);
+            }
+
+            // ۳. بررسی فایل ضمیمه (PDF یا ZIP): اگر آدرس فایل پیوست جدید متفاوت از قبلی بود
+            if (isset($data['file_path']) && $data['file_path'] !== $lesson->file_path) {
+                // حذف فایل ضمیمه قدیمی
+                $this->uploader->delete($lesson->file_path);
+            }
+
 
             // اگر عنوان تغییر کرده بود، اسلاگ جدید ساخته شود
             if (isset($data['title'])) {
@@ -85,7 +114,10 @@ class LessonController extends BaseApiController
 
             $lesson->update($data);
 
-            return response()->json($lesson);
+            return response()->json([
+                'message' => 'درس با موفقیت بروزرسانی شد.',
+                'data' => $lesson
+            ], Response::HTTP_OK);
         } catch (\Throwable $th) {
             return $this->handleException($th);
 
@@ -93,18 +125,49 @@ class LessonController extends BaseApiController
         }
     }
 
-    public function destroy(Lesson $lesson)
+    public function destroy(Lesson $lesson): JsonResponse
     {
+        // اگر کلاس Lesson از SoftDeletes استفاده می‌کند:
+        // این متد فقط فیلد deleted_at را پر می‌کند و فایل‌ها روی سرور باقی می‌مانند
+
         try {
             $lesson->delete();
 
             return response()->json([
-                'message' => 'Lesson deleted successfully'
-            ]);
+                'message' => 'درس با موفقیت (به صورت موقت) حذف شد.'
+            ], Response::HTTP_OK);
+
         } catch (\Throwable $th) {
             return $this->handleException($th);
+        }
+    }
 
+    /**
+     * متد حذف دائمی درس (Force Delete) همراه با پاک کردن فیزیکی تمام فایل‌ها از سرور
+     * این متد را می‌توانید در مسیرهای وب‌پنل ادمین برای پاکسازی کامل قرار دهید
+     */
+    public function forceDestroy($id): JsonResponse
+    {
 
+        try {
+            // پیدا کردن 
+            // درس، حتی درس‌های سافت‌دیلیت شده
+            $lesson = Lesson::withTrashed()->findOrFail($id);
+
+            // ۱. حذف فایل‌های فیزیکی درس از سرور
+            $this->uploader->delete($lesson->video_url);
+            $this->uploader->delete($lesson->audio_url);
+            $this->uploader->delete($lesson->file_path);
+
+            // ۲. حذف دائمی رکورد از دیتابیس
+            $lesson->forceDelete();
+
+            return response()->json([
+                'message' => 'درس و تمامی فایل‌های مربوط به آن برای همیشه حذف شدند.'
+            ], Response::HTTP_OK);
+
+        } catch (\Throwable $th) {
+            return $this->handleException($th);
         }
     }
 }

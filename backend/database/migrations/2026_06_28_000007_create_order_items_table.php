@@ -5,6 +5,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('order_items', function (Blueprint $table) {
@@ -18,9 +21,19 @@ return new class extends Migration {
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->decimal('price', 12, 2);
+            // قیمت دوره هنگام خرید
+            $table->unsignedBigInteger('price');
+
+            // تخفیف روی این آیتم
+            $table->unsignedBigInteger('discount_amount')->default(0);
+
+            // قیمت نهایی
+            $table->unsignedBigInteger('final_price');
 
             $table->timestamps();
+
+            // جلوگیری از ثبت تکراری
+            $table->unique(['order_id', 'course_id']);
         });
     }
 

@@ -53,4 +53,20 @@ class User extends Authenticatable
             ->withTimestamps()
             ->withPivot(['granted_at', 'expires_at']);
     }
+
+
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function courses()
+    {
+        return $this->belongsToMany(
+            Course::class,
+            'enrollments'
+        );
+    }
+
+
 }

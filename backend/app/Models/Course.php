@@ -60,6 +60,19 @@ class Course extends Model
             ->withTimestamps()
             ->withPivot(['granted_at', 'expires_at']);
     }
+
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function students()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'enrollments'
+        );
+    }
 }
 
 
