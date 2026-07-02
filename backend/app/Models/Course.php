@@ -10,6 +10,7 @@ class Course extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'category_id',
         'title',
         'slug',
         'type',
@@ -23,6 +24,13 @@ class Course extends Model
         'created_by'
     ];
 
+
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'discount_price' => 'decimal:2',
+        'published_at' => 'datetime',
+    ];
 
     // سازنده دوره
     public function creator()
@@ -72,6 +80,10 @@ class Course extends Model
             User::class,
             'enrollments'
         );
+    }
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 }
 

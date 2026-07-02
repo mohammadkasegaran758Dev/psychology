@@ -1,53 +1,168 @@
 <?php
+
+use App\Http\Controllers\Api\Admin\CategoryController;
+use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Admin\UploadController;
+
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\CourseController;
 use App\Http\Controllers\Api\Admin\CourseSectionController;
 use App\Http\Controllers\Api\Admin\LessonController;
 use App\Http\Controllers\Api\Admin\UserController;
-use App\Http\Controllers\StreamController;
-use App\Http\Controllers\Admin\EnrollmentController as AdminEnrollmentController;
-use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Api\Admin\EnrollmentController;
+use App\Http\Controllers\Api\Admin\OrderController;
 
+use App\Http\Controllers\StreamController;
+
+/*
+|--------------------------------------------------------------------------
+| Admin Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::prefix('admin')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auth
+    |--------------------------------------------------------------------------
+    */
 
     Route::post('/login', [AuthController::class, 'login']);
 
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Authenticated Admin
+        |--------------------------------------------------------------------------
+        */
+
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Courses / Sections / Lessons
+        |--------------------------------------------------------------------------
+        */
+
         Route::apiResource('courses', CourseController::class);
+
         Route::apiResource('sections', CourseSectionController::class);
+
         Route::apiResource('lessons', LessonController::class);
+
+        Route::delete(
+            'lessons/{id}/force',
+            [LessonController::class, 'forceDestroy']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Users
+        |--------------------------------------------------------------------------
+        */
 
         Route::apiResource('users', UserController::class);
 
-        // upload
-        Route::post('/uploads', [UploadController::class, 'upload']);
+        /*
+        |--------------------------------------------------------------------------
+        | Uploads
+        |--------------------------------------------------------------------------
+        */
 
-        Route::delete('lessons/{id}/force', [LessonController::class, 'forceDestroy']);
+        Route::post(
+            '/uploads',
+            [UploadController::class, 'upload']
+        );
 
-        Route::get('/lessons/{lesson}/stream', [StreamController::class, 'streamVideo']);
+        Route::post(
+            '/uploads/chunk',
+            [UploadController::class, 'chunkUpload']
+        );
 
-        Route::post('/uploads/chunk', [UploadController::class, 'chunkUpload']);
+        /*
+        |--------------------------------------------------------------------------
+        | Secure Streaming
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/lessons/{lesson}/stream',
+            [StreamController::class, 'streamVideo']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Enrollments
+        |--------------------------------------------------------------------------
+        */
+
+        Route::apiResource(
+            'enrollments',
+            EnrollmentController::class
+        );
+
+        Route::patch(
+            'enrollments/{enrollment}/revoke',
+            [EnrollmentController::class, 'revoke']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Course Students
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            'courses/{course}/enrollments',
+            [EnrollmentController::class, 'courseEnrollments']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Orders
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            'orders',
+            [OrderController::class, 'index']
+        );
+
+        Route::get(
+            'orders/{order}',
+            [OrderController::class, 'show']
+        );
+
+        Route::patch(
+            'orders/{order}/status',
+            [OrderController::class, 'updateStatus']
+        );
 
 
-
-        // مسیرهای مدیریت دسترسی‌ها (Enrollments)
-        Route::get('courses/{course}/enrollments', [AdminEnrollmentController::class, 'index']);
-        Route::post('enrollments', [AdminEnrollmentController::class, 'store']);
-        Route::delete('enrollments', [AdminEnrollmentController::class, 'destroy']);
-
-        // مسیرهای مدیریت سفارشات
-        Route::get('orders', [AdminOrderController::class, 'index']);
-        Route::get('orders/{order}', [AdminOrderController::class, 'show']);
-        Route::put('orders/{order}/status', [AdminOrderController::class, 'updateStatus']);
+        /*
+          |--------------------------------------------------------------------------
+          | category
+          |--------------------------------------------------------------------------
+          */
 
 
+        Route::get(
+            'categories/tree',
+            [CategoryController::class, 'tree']
+        );
 
+        Route::get(
+            'categories/options',
+            [CategoryController::class, 'options']
+        );
 
+        Route::apiResource(
+            'categories',
+            CategoryController::class
+        );
     });
 });

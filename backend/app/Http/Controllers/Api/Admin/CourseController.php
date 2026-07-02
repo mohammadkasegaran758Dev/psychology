@@ -1,10 +1,13 @@
 <?php
+
 namespace App\Http\Controllers\Api\Admin;
+
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreCourseRequest;
+use App\Http\Requests\Admin\UpdateCourseRequest;
 use App\Models\Course;
 use App\Services\FileUploader;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
@@ -16,92 +19,246 @@ class CourseController extends Controller
     {
         $this->uploader = $uploader;
     }
-    public function index()
+
+    /**
+     * لیست دوره‌ها
+     */
+    public function index(): JsonResponse
     {
-        $courses = Course::latest()->paginate(10);
+        $courses = Course::with([
+            'category',
+            'creator'
+        ])
+            ->latest()
+            ->paginate(10);
 
         return response()->json($courses);
     }
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:full_course,mini_course'],
-            'short_description' => ['nullable', 'string'],
-            'description' => ['nullable', 'string'],
-            'price' => ['required', 'numeric'],
-            'discount_price' => ['nullable', 'numeric'],
-            'status' => ['required', 'in:draft,published,archived']
-        ]);
+    /**
+     * ایجاد دوره جدید
+     */
+    public function store(
+        StoreCourseRequest $request
+    ): JsonResponse {
 
-        $data['slug'] = Str::slug($data['title']);
+        $data = $request->validated();
+
+        /*
+        ساخت slug یکتا
+        */
+        $slug = Str::slug($data['title']);
+
+        $count = Course::where(
+            'slug',
+            'like',
+            "{$slug}%"
+        )->count();
+
+        $data['slug'] = $count
+            ? "{$slug}-" . ($count + 1)
+            : $slug;
+
+        /*
+        ثبت سازنده دوره
+        */
         $data['created_by'] = $request->user()->id;
+
+        /*
+        اگر منتشر شده بود
+        تاریخ انتشار ثبت شود
+        */
+        if (
+            isset($data['status'])
+            && $data['status'] === 'published'
+        ) {
+            $data['published_at'] = now();
+        }
 
         $course = Course::create($data);
 
-        return response()->json($course, 201);
-    }
-
-    public function show(Course $course)
-    {
-        return response()->json($course);
-    }
-
-    public function update(Request $request, Course $course)
-    {
-        $data = $request->validate([
-            'title' => ['sometimes', 'string', 'max:255'],
-            'type' => ['sometimes', 'in:full_course,mini_course'],
-            'short_description' => ['nullable', 'string'],
-            'description' => ['nullable', 'string'],
-            'price' => ['sometimes', 'numeric'],
-            'discount_price' => ['nullable', 'numeric'],
-            'status' => ['sometimes', 'in:draft,published,archived']
+        $course->load([
+            'category',
+            'creator'
         ]);
 
+        return response()->json([
+            'message' => 'دوره با موفقیت ایجاد شد.',
+            'data' => $course
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * نمایش جزئیات دوره
+     */
+    public function show(
+        Course $course
+    ): JsonResponse {
+
+        $course->load([
+            'category',
+            'creator',
+            'lessons'
+        ]);
+
+        return response()->json([
+            'data' => $course
+        ]);
+    }
+
+    /**
+     * بروزرسانی دوره
+     */
+    public function update(
+        UpdateCourseRequest $request,
+        Course $course
+    ): JsonResponse {
+
+        $data = $request->validated();
+
+        /*
+        اگر title تغییر کرد
+        slug جدید ساخته شود
+        */
         if (isset($data['title'])) {
-            $data['slug'] = Str::slug($data['title']);
+
+            $slug = Str::slug($data['title']);
+
+            $count = Course::where(
+                'slug',
+                'like',
+                "{$slug}%"
+            )
+                ->where('id', '!=', $course->id)
+                ->count();
+
+            $data['slug'] = $count
+                ? "{$slug}-" . ($count + 1)
+                : $slug;
         }
-        if (isset($data['image_path']) && $data['image_path'] !== $course->image_path) {
-            $this->uploader->delete($course->image_path);
+
+        /*
+        اگر تصویر تغییر کرد
+        تصویر قبلی حذف شود
+        */
+        if (
+            isset($data['cover_image'])
+            && $data['cover_image'] !== $course->cover_image
+        ) {
+
+            if ($course->cover_image) {
+                $this->uploader->delete(
+                    $course->cover_image
+                );
+            }
+        }
+
+        /*
+        اگر status منتشر شد
+        و قبلاً published نبود
+        */
+        if (
+            isset($data['status'])
+            && $data['status'] === 'published'
+            && !$course->published_at
+        ) {
+            $data['published_at'] = now();
+        }
+
+        /*
+        اگر draft شد
+        تاریخ انتشار null شود
+        */
+        if (
+            isset($data['status'])
+            && $data['status'] !== 'published'
+        ) {
+            $data['published_at'] = null;
         }
 
         $course->update($data);
 
-        return response()->json($course);
+        $course->load([
+            'category',
+            'creator'
+        ]);
+
+        return response()->json([
+            'message' => 'دوره با موفقیت بروزرسانی شد.',
+            'data' => $course
+        ]);
     }
 
-    public function destroy(Course $course)
-    {
+    /**
+     * حذف موقت دوره
+     */
+    public function destroy(
+        Course $course
+    ): JsonResponse {
+
         $course->delete();
 
         return response()->json([
-            'message' => 'دوره با موفقیت (به صورت موقت) حذف شد.'
+            'message' => 'دوره با موفقیت حذف شد.'
         ], Response::HTTP_OK);
     }
 
+    /**
+     * حذف دائمی دوره و فایل‌ها
+     */
+    public function forceDestroy(
+        int $id
+    ): JsonResponse {
 
-    public function forceDestroy($id): JsonResponse
-    {
-        $course = Course::withTrashed()->with('lessons')->findOrFail($id);
+        $course = Course::withTrashed()
+            ->with([
+                'lessons'
+            ])
+            ->findOrFail($id);
 
-        // ۱. حذف تصویر اصلی دوره
-        $this->uploader->delete($course->image_path);
+        /*
+        حذف تصویر دوره
+        */
+        if ($course->cover_image) {
 
-        // ۲. حذف فایل‌های تمام درس‌های مرتبط با دوره
+            $this->uploader->delete(
+                $course->cover_image
+            );
+        }
+
+        /*
+        حذف فایل‌های درس‌ها
+        */
         foreach ($course->lessons as $lesson) {
-            $this->uploader->delete($lesson->video_url);
-            $this->uploader->delete($lesson->audio_url);
-            $this->uploader->delete($lesson->file_path);
+
+            if ($lesson->video_url) {
+                $this->uploader->delete(
+                    $lesson->video_url
+                );
+            }
+
+            if ($lesson->audio_url) {
+                $this->uploader->delete(
+                    $lesson->audio_url
+                );
+            }
+
+            if ($lesson->file_path) {
+                $this->uploader->delete(
+                    $lesson->file_path
+                );
+            }
+
             $lesson->forceDelete();
         }
 
-        // ۳. حذف فیزیکی خود دوره
+        /*
+        حذف دائمی خود دوره
+        */
         $course->forceDelete();
 
         return response()->json([
-            'message' => 'دوره، تمام درس‌ها و فایل‌های مرتبط با آن‌ها برای همیشه حذف شدند.'
+            'message' => 'دوره و تمام فایل‌های مرتبط برای همیشه حذف شدند.'
         ], Response::HTTP_OK);
     }
 }
