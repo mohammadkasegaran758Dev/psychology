@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\UploadController;
@@ -145,7 +146,7 @@ Route::prefix('admin')->group(function () {
 
         /*
           |--------------------------------------------------------------------------
-          | category
+          | Category
           |--------------------------------------------------------------------------
           */
 
@@ -163,6 +164,23 @@ Route::prefix('admin')->group(function () {
         Route::apiResource(
             'categories',
             CategoryController::class
+        );
+
+        /*
+          |--------------------------------------------------------------------------
+          | Payment
+          |--------------------------------------------------------------------------
+          */
+
+
+        Route::get(
+            'payments',
+            [PaymentController::class, 'index']
+        );
+
+        Route::get(
+            'payments/{payment}',
+            [PaymentController::class, 'show']
         );
     });
 });
