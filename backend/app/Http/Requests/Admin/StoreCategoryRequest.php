@@ -18,7 +18,7 @@ class StoreCategoryRequest extends FormRequest
             'parent_id' => [
                 'nullable',
                 'exists:categories,id',
-                'not_in:' . $this->route('category')->id
+                // 'not_in:' . $this->route('category')->id
             ],
 
             'title' => [

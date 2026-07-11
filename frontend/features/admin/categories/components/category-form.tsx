@@ -63,10 +63,10 @@ export function CategoryForm({
 }: CategoryFormProps) {
   const initialValues = useMemo<CategoryFormValues>(
     () => ({
-      name: defaultValues?.name ?? "",
+      title: defaultValues?.title ?? "",
       slug: defaultValues?.slug ?? "",
       description: defaultValues?.description ?? "",
-      status: defaultValues?.status ?? "active",
+      is_active: defaultValues?.is_active ?? true,
     }),
     [defaultValues],
   );
@@ -81,7 +81,7 @@ export function CategoryForm({
     defaultValues: initialValues,
   });
 
-  const nameValue = form.watch("name");
+  const nameValue = form.watch("title");
   const slugValue = form.watch("slug");
 
   const handleAutoGenerateSlug = () => {
@@ -111,7 +111,7 @@ export function CategoryForm({
             <div className="grid gap-6 md:grid-cols-2">
               <FormField
                 control={form.control}
-                name="name"
+                name="title"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>نام دسته‌بندی</FormLabel>
@@ -179,19 +179,24 @@ export function CategoryForm({
             <div className="grid gap-6 md:grid-cols-2">
               <FormField
                 control={form.control}
-                name="status"
+                name="is_active"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>وضعیت</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value ? "true" : "false"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "true")
+                      }
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="وضعیت را انتخاب کنید" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="active">فعال</SelectItem>
-                        <SelectItem value="inactive">غیرفعال</SelectItem>
+                        <SelectItem value="true">فعال</SelectItem>
+                        <SelectItem value="false">غیرفعال</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -219,7 +224,7 @@ export function CategoryForm({
                       <span className="font-medium text-foreground">
                         وضعیت:
                       </span>{" "}
-                      {form.watch("status") === "active" ? "فعال" : "غیرفعال"}
+                      {form.watch("is_active") ? "فعال" : "غیرفعال"}
                     </p>
                   </div>
                 </div>

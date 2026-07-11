@@ -1,0 +1,13 @@
+export type Category = {
+  id: number;
+  parent_id: number | null;
+  title: string;
+  slug: string;
+  description: string | null;
+  image: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+

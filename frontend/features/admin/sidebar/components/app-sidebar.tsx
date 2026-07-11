@@ -8,6 +8,7 @@ import {
 import { BookOpenText } from "lucide-react";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
+import { getAdminToken } from "../../auth/lib/admin-auth-storage";
 
 const user = {
   name: "محمد رضوانی",
@@ -15,6 +16,8 @@ const user = {
   avatar: "",
 };
 
+const token = getAdminToken();
+console.log("token", token);
 export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" side="right" variant="sidebar">

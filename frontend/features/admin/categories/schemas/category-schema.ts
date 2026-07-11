@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const categorySchema = z.object({
-  name: z
+  title: z
     .string()
     .min(2, "نام دسته‌بندی باید حداقل ۲ کاراکتر باشد")
     .max(100, "نام دسته‌بندی نباید بیشتر از ۱۰۰ کاراکتر باشد"),
@@ -38,7 +38,7 @@ export const categorySchema = z.object({
     .optional()
     .or(z.literal("")),
 
-  status: z.enum(["active", "inactive"]).default("active"),
+  is_active: z.boolean().default(true),
 });
 
 export type CategoryFormValues = z.infer<typeof categorySchema>;
