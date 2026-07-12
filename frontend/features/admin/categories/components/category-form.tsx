@@ -135,7 +135,7 @@ export function CategoryForm({
                     <FormControl>
                       <div className="flex gap-2">
                         <Input
-                          dir="ltr"
+                          dir="rtl"
                           placeholder="child-psychology"
                           {...field}
                         />

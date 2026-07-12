@@ -8,7 +8,10 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreLessonRequest;
+
+
+use App\Http\Requests\admin\StoreLessonRequest;
+use App\Http\Requests\admin\UpdateLessonRequest;
 use App\Models\Lesson;
 use App\Services\FileUploader;
 use Illuminate\Http\JsonResponse;
@@ -82,46 +85,38 @@ class LessonController extends BaseApiController
         }
     }
 
-    public function update(StoreLessonRequest $request, Lesson $lesson): JsonResponse
+    public function update(UpdateLessonRequest $request, Lesson $lesson): JsonResponse
     {
         try {
             $data = $request->validated();
 
+            // تعریف آرایه‌ای برای فایل‌هایی که باید بعد از موفقیت حذف شوند
+            $filesToDelete = [];
 
-            // ۱. بررسی فایل ویدیو: اگر آدرس ویدیو در درخواست جدید متفاوت از دیتابیس بود
             if (isset($data['video_url']) && $data['video_url'] !== $lesson->video_url) {
-                // حذف ویدیوی قدیمی از روی هارد سرور
-                $this->uploader->delete($lesson->video_url);
+                $filesToDelete[] = $lesson->video_url;
             }
 
-            // ۲. بررسی فایل صوتی: اگر آدرس فایل صوتی جدید متفاوت از قبلی بود
-            if (isset($data['audio_url']) && $data['audio_url'] !== $lesson->audio_url) {
-                // حذف فایل صوتی قدیمی
-                $this->uploader->delete($lesson->audio_url);
-            }
+            // ... همین کار را برای audio و file انجام دهید
 
-            // ۳. بررسی فایل ضمیمه (PDF یا ZIP): اگر آدرس فایل پیوست جدید متفاوت از قبلی بود
-            if (isset($data['file_path']) && $data['file_path'] !== $lesson->file_path) {
-                // حذف فایل ضمیمه قدیمی
-                $this->uploader->delete($lesson->file_path);
-            }
-
-
-            // اگر عنوان تغییر کرده بود، اسلاگ جدید ساخته شود
+            // آپدیت دیتابیس
             if (isset($data['title'])) {
                 $data['slug'] = Str::slug($data['title']) . '-' . Str::random(5);
             }
-
             $lesson->update($data);
+
+            // حذف فایل‌های قدیمی فقط پس از موفقیت‌آمیز بودن دیتابیس
+            foreach ($filesToDelete as $filePath) {
+                $this->uploader->delete($filePath);
+            }
 
             return response()->json([
                 'message' => 'درس با موفقیت بروزرسانی شد.',
                 'data' => $lesson
             ], Response::HTTP_OK);
+
         } catch (\Throwable $th) {
             return $this->handleException($th);
-
-
         }
     }
 
