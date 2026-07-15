@@ -32,6 +32,12 @@ class Course extends Model
         'published_at' => 'datetime',
     ];
 
+    public function getIsFreeAttribute(): bool
+    {
+        return $this->price <= 0
+            || ($this->discount_price !== null && $this->discount_price <= 0);
+    }
+
     // سازنده دوره
     public function creator()
     {

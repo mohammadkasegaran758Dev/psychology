@@ -12,7 +12,7 @@ return new class extends Migration {
                 ->default('customer')
                 ->after('password');
 
-            $table->enum('status', ['active', 'blocked'])
+            $table->enum('status', ['active', 'inactive', 'banned'])
                 ->default('active')
                 ->after('role');
         });

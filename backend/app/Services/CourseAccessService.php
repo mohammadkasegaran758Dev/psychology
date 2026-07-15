@@ -23,7 +23,7 @@ class CourseAccessService
         }
 
         // ادمین
-        if ($user->is_admin) {
+        if ($user->role === 'admin') {
             return true;
         }
 

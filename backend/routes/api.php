@@ -49,16 +49,37 @@ Route::prefix('admin')->group(function () {
         |--------------------------------------------------------------------------
         */
 
+
+
+
+        // مرتب‌سازی سکشن‌ها
+        Route::patch('sections/reorder', [CourseSectionController::class, 'reorder']);
+
+        // مرتب‌سازی درس‌ها
+        Route::patch('lessons/reorder', [LessonController::class, 'reorder']);
+
+
+        // Route::apiResource('sections', CourseSectionController::class);
+
+        // Route::apiResource('lessons', LessonController::class);
+
+        // Route::delete(
+        //     'lessons/{id}/force',
+        //     [LessonController::class, 'forceDestroy']
+        // );
+
+
+        Route::delete('lessons/{id}/force', [LessonController::class, 'forceDestroy'])
+            ->whereNumber('id');
+
+        Route::apiResource('lessons', LessonController::class)
+            ->where(['lesson' => '[0-9]+']);
+
+        Route::apiResource('sections', CourseSectionController::class)
+            ->where(['section' => '[0-9]+']);
+
         Route::apiResource('courses', CourseController::class);
 
-        Route::apiResource('sections', CourseSectionController::class);
-
-        Route::apiResource('lessons', LessonController::class);
-
-        Route::delete(
-            'lessons/{id}/force',
-            [LessonController::class, 'forceDestroy']
-        );
 
         /*
         |--------------------------------------------------------------------------
@@ -182,5 +203,7 @@ Route::prefix('admin')->group(function () {
             'payments/{payment}',
             [PaymentController::class, 'show']
         );
+
+
     });
 });

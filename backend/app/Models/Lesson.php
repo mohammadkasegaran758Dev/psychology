@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Lesson extends Model
 {
@@ -27,6 +28,8 @@ class Lesson extends Model
         'duration_minutes' => 'integer',
         'sort_order' => 'integer',
     ];
+
+    use SoftDeletes;
 
     public function course()
     {

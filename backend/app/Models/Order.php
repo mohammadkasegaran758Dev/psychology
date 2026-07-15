@@ -14,10 +14,8 @@ class Order extends Model
         'order_number',
         'subtotal',
         'discount_amount',
-        'total_price', // هم ارز total_amount در میگریشن
+        'total_amount', // هم ارز total_amount در میگریشن
         'status',
-        'payment_gateway',
-        'payment_ref',
         'paid_at'
     ];
 
@@ -35,14 +33,13 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function transaction(): HasOne
+    public function transactions(): HasMany
     {
-        return $this->hasOne(Transaction::class);
+        return $this->hasMany(Transaction::class);
     }
-    public function payments()
+
+    public function payments(): HasMany
     {
-        return $this->hasMany(
-            Payment::class
-        );
+        return $this->hasMany(Payment::class);
     }
 }

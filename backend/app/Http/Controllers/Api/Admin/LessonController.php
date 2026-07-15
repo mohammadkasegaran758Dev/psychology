@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 
 class LessonController extends BaseApiController
@@ -118,6 +119,26 @@ class LessonController extends BaseApiController
         } catch (\Throwable $th) {
             return $this->handleException($th);
         }
+    }
+
+    public function reorder(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:lessons,id'],
+        ]);
+
+        DB::transaction(function () use ($data) {
+            foreach ($data['ids'] as $index => $id) {
+                Lesson::whereKey($id)->update([
+                    'sort_order' => $index + 1,
+                ]);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Lessons reordered successfully',
+        ]);
     }
 
     public function destroy(Lesson $lesson): JsonResponse

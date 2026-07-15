@@ -38,3 +38,12 @@ export async function deleteSection(
   );
   return response.data;
 }
+
+export async function reorderSections(
+  sectionIds: number[],
+): Promise<{ message: string }> {
+  const response = await api.patch("/admin/sections/reorder", {
+    ids: sectionIds,
+  });
+  return response.data;
+}

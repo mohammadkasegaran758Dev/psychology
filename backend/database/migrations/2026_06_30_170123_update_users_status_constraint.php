@@ -18,11 +18,5 @@ return new class extends Migration {
     public function down(): void
     {
         DB::statement('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_status_check');
-
-        DB::statement("
-            ALTER TABLE users
-            ADD CONSTRAINT users_status_check
-            CHECK (status IN ('active'))
-        ");
     }
 };

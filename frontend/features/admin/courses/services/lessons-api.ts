@@ -58,3 +58,11 @@ export async function deleteLesson(lessonId: number): Promise<void> {
 export async function forceDeleteLesson(lessonId: number): Promise<void> {
   await api.delete(`/admin/lessons/${lessonId}/force`);
 }
+export async function reorderLessons(
+  lessonIds: number[],
+): Promise<{ message: string }> {
+  const response = await api.patch("/admin/lessons/reorder", {
+    ids: lessonIds,
+  });
+  return response.data;
+}
