@@ -1,20 +1,67 @@
 <?php
 
-use App\Http\Controllers\Api\Admin\CategoryController;
-use App\Http\Controllers\Api\Admin\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Admin\UploadController;
-
-use App\Http\Controllers\Api\Admin\AuthController;
-use App\Http\Controllers\Api\Admin\CourseController;
-use App\Http\Controllers\Api\Admin\CourseSectionController;
-use App\Http\Controllers\Api\Admin\LessonController;
-use App\Http\Controllers\Api\Admin\UserController;
-use App\Http\Controllers\Api\Admin\EnrollmentController;
-use App\Http\Controllers\Api\Admin\OrderController;
-
 use App\Http\Controllers\StreamController;
+
+use App\Http\Controllers\Api\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Api\Admin\CourseController as AdminCourseController;
+use App\Http\Controllers\Api\Admin\CourseSectionController as AdminCourseSectionController;
+use App\Http\Controllers\Api\Admin\EnrollmentController as AdminEnrollmentController;
+use App\Http\Controllers\Api\Admin\LessonController as AdminLessonController;
+use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
+
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\HomeController;
+use App\Http\Controllers\Api\MeController;
+use App\Http\Controllers\Api\MyCourseController;
+use App\Http\Controllers\Api\MyOrderController;
+use App\Http\Controllers\Api\MyPaymentController;
+use App\Http\Controllers\Api\OrderController as CustomerOrderController;
+use App\Http\Controllers\Api\PaymentController as CustomerPaymentController;
+
+/*
+|--------------------------------------------------------------------------
+| Public Storefront Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/home', [HomeController::class, 'index']);
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{slug}', [CategoryController::class, 'show']);
+Route::get('/courses', [CourseController::class, 'index']);
+Route::get('/courses/{slug}', [CourseController::class, 'show']);
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [MeController::class, 'show']);
+
+    Route::post('/orders', [CustomerOrderController::class, 'store']);
+    Route::get('/orders/{order}', [CustomerOrderController::class, 'show']);
+
+    Route::post('/payments/request', [CustomerPaymentController::class, 'request']);
+    Route::get('/payments/verify', [CustomerPaymentController::class, 'verify']);
+
+    Route::get('/my/courses', [MyCourseController::class, 'index']);
+    Route::get('/my/courses/{course}/content', [MyCourseController::class, 'content']);
+
+    Route::get('/my/orders', [MyOrderController::class, 'index']);
+    Route::get('/my/orders/{order}', [MyOrderController::class, 'show']);
+
+    Route::get('/my/payments', [MyPaymentController::class, 'index']);
+    Route::get('/my/payments/{payment}', [MyPaymentController::class, 'show']);
+
+    Route::get('/lessons/{lesson}/stream', [StreamController::class, 'streamVideo']);
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -30,7 +77,7 @@ Route::prefix('admin')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AdminAuthController::class, 'login']);
 
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
@@ -40,8 +87,8 @@ Route::prefix('admin')->group(function () {
         |--------------------------------------------------------------------------
         */
 
-        Route::post('/logout', [AuthController::class, 'logout']);
-        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AdminAuthController::class, 'logout']);
+        Route::get('/me', [AdminAuthController::class, 'me']);
 
         /*
         |--------------------------------------------------------------------------
@@ -53,10 +100,10 @@ Route::prefix('admin')->group(function () {
 
 
         // مرتب‌سازی سکشن‌ها
-        Route::patch('sections/reorder', [CourseSectionController::class, 'reorder']);
+        Route::patch('sections/reorder', [AdminCourseSectionController::class, 'reorder']);
 
         // مرتب‌سازی درس‌ها
-        Route::patch('lessons/reorder', [LessonController::class, 'reorder']);
+        Route::patch('lessons/reorder', [AdminLessonController::class, 'reorder']);
 
 
         // Route::apiResource('sections', CourseSectionController::class);
@@ -69,16 +116,16 @@ Route::prefix('admin')->group(function () {
         // );
 
 
-        Route::delete('lessons/{id}/force', [LessonController::class, 'forceDestroy'])
+        Route::delete('lessons/{id}/force', [AdminLessonController::class, 'forceDestroy'])
             ->whereNumber('id');
 
-        Route::apiResource('lessons', LessonController::class)
+        Route::apiResource('lessons', AdminLessonController::class)
             ->where(['lesson' => '[0-9]+']);
 
-        Route::apiResource('sections', CourseSectionController::class)
+        Route::apiResource('sections', AdminCourseSectionController::class)
             ->where(['section' => '[0-9]+']);
 
-        Route::apiResource('courses', CourseController::class);
+        Route::apiResource('courses', AdminCourseController::class);
 
 
         /*
@@ -87,7 +134,7 @@ Route::prefix('admin')->group(function () {
         |--------------------------------------------------------------------------
         */
 
-        Route::apiResource('users', UserController::class);
+        Route::apiResource('users', AdminUserController::class);
 
         /*
         |--------------------------------------------------------------------------
@@ -124,12 +171,12 @@ Route::prefix('admin')->group(function () {
 
         Route::apiResource(
             'enrollments',
-            EnrollmentController::class
+            AdminEnrollmentController::class
         );
 
         Route::patch(
             'enrollments/{enrollment}/revoke',
-            [EnrollmentController::class, 'revoke']
+            [AdminEnrollmentController::class, 'revoke']
         );
 
         /*
@@ -140,7 +187,7 @@ Route::prefix('admin')->group(function () {
 
         Route::get(
             'courses/{course}/enrollments',
-            [EnrollmentController::class, 'courseEnrollments']
+            [AdminEnrollmentController::class, 'courseEnrollments']
         );
 
         /*
@@ -151,17 +198,17 @@ Route::prefix('admin')->group(function () {
 
         Route::get(
             'orders',
-            [OrderController::class, 'index']
+            [AdminOrderController::class, 'index']
         );
 
         Route::get(
             'orders/{order}',
-            [OrderController::class, 'show']
+            [AdminOrderController::class, 'show']
         );
 
         Route::patch(
             'orders/{order}/status',
-            [OrderController::class, 'updateStatus']
+            [AdminOrderController::class, 'updateStatus']
         );
 
 
@@ -174,17 +221,17 @@ Route::prefix('admin')->group(function () {
 
         Route::get(
             'categories/tree',
-            [CategoryController::class, 'tree']
+            [AdminCategoryController::class, 'tree']
         );
 
         Route::get(
             'categories/options',
-            [CategoryController::class, 'options']
+            [AdminCategoryController::class, 'options']
         );
 
         Route::apiResource(
             'categories',
-            CategoryController::class
+            AdminCategoryController::class
         );
 
         /*
@@ -196,12 +243,12 @@ Route::prefix('admin')->group(function () {
 
         Route::get(
             'payments',
-            [PaymentController::class, 'index']
+            [AdminPaymentController::class, 'index']
         );
 
         Route::get(
             'payments/{payment}',
-            [PaymentController::class, 'show']
+            [AdminPaymentController::class, 'show']
         );
 
 

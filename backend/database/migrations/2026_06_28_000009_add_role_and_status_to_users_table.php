@@ -8,18 +8,26 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['admin', 'customer'])
-                ->default('customer')
-                ->after('password');
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->string('role')->default('customer')->after('password');
+            }
 
-            $table->enum('status', ['active', 'inactive', 'banned'])
-                ->default('active')
-                ->after('role');
+            if (!Schema::hasColumn('users', 'status')) {
+                $table->string('status')->default('active')->after('role');
+            }
         });
     }
 
     public function down(): void
     {
+        if ($this->getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
+        if (!Schema::hasColumn('users', 'role') || !Schema::hasColumn('users', 'status')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn(['role', 'status']);
         });
