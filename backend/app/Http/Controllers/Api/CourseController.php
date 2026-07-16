@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Services\Content\CourseContentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 
 class CourseController extends Controller
 {
@@ -73,49 +73,15 @@ class CourseController extends Controller
         ]);
     }
 
-    public function show(string $slug, Request $request): JsonResponse
+    public function show(string $slug, Request $request, CourseContentService $courseContentService): JsonResponse
     {
         $course = Course::query()
             ->where('slug', $slug)
             ->where('status', 'published')
-            ->with(['category', 'sections', 'lessons'])
+            ->with(['category'])
             ->firstOrFail();
 
-        $user = $request->user();
-        $hasAccess = false;
-        $isEnrolled = false;
-
-        if ($user) {
-            $isEnrolled = $user->enrollments()
-                ->where('course_id', $course->id)
-                ->where('status', 'active')
-                ->exists();
-
-            $hasAccess = $isEnrolled || $user->role === 'admin';
-        }
-
-        $sections = $course->sections->map(function ($section) use ($hasAccess, $course): array {
-            $lessons = $section->lessons->map(function ($lesson) use ($hasAccess): array {
-                $isLocked = !$hasAccess && !$lesson->is_free_preview;
-
-                return [
-                    'id' => $lesson->id,
-                    'title' => $lesson->title,
-                    'sort_order' => $lesson->sort_order,
-                    'is_free_preview' => (bool) $lesson->is_free_preview,
-                    'duration' => $lesson->duration_minutes,
-                    'is_locked' => $isLocked,
-                    'video_url' => $hasAccess ? $lesson->video_url : null,
-                ];
-            });
-
-            return [
-                'id' => $section->id,
-                'title' => $section->title,
-                'sort_order' => $section->sort_order,
-                'lessons' => $lessons,
-            ];
-        });
+        $content = $courseContentService->buildCourseView($course, $request->user());
 
         return response()->json([
             'message' => 'Course fetched successfully.',
@@ -129,9 +95,9 @@ class CourseController extends Controller
                 'price' => (float) $course->price,
                 'discount_price' => $course->discount_price !== null ? (float) $course->discount_price : null,
                 'final_price' => (float) ($course->discount_price ?? $course->price),
-                'has_access' => $hasAccess,
-                'is_enrolled' => $isEnrolled,
-                'sections' => $sections,
+                'has_access' => $content['has_access'],
+                'is_enrolled' => $content['is_enrolled'],
+                'sections' => $content['sections'],
             ],
         ]);
     }

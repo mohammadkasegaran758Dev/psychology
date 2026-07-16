@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Enrollment;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\Payments\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
+    public function __construct(protected PaymentService $paymentService)
+    {
+    }
+
     public function request(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -21,14 +24,7 @@ class PaymentController extends Controller
         $order = Order::findOrFail($validated['order_id']);
         abort_unless($order->user_id === $request->user()->id, 403, 'You do not have access to this order.');
 
-        $payment = Payment::create([
-            'order_id' => $order->id,
-            'user_id' => $request->user()->id,
-            'gateway' => 'zarinpal',
-            'status' => 'pending',
-            'amount' => $order->total_amount,
-            'authority' => 'A' . Str::random(24),
-        ]);
+        $payment = $this->paymentService->createPendingPayment($order, $request->user()->id);
 
         return response()->json([
             'message' => 'Payment request created successfully.',
@@ -58,29 +54,10 @@ class PaymentController extends Controller
         $payment = Payment::where('authority', $authority)->firstOrFail();
         abort_unless($payment->user_id === $request->user()->id, 403, 'You do not have access to this payment.');
 
-        $payment->update([
-            'status' => 'success',
-            'paid_at' => now(),
-            'gateway_response' => ['status' => 'OK'],
-        ]);
+        $result = $this->paymentService->verifyPayment($payment);
 
-        $order = $payment->order;
-        $order->update([
-            'status' => 'paid',
-            'paid_at' => now(),
-        ]);
-
-        foreach ($order->items as $item) {
-            Enrollment::firstOrCreate([
-                'user_id' => $payment->user_id,
-                'course_id' => $item->course_id,
-                'order_id' => $order->id,
-            ], [
-                'access_type' => 'purchase',
-                'status' => 'active',
-                'expires_at' => null,
-            ]);
-        }
+        $payment = $result['payment'];
+        $order = $result['order'];
 
         return response()->json([
             'message' => 'Payment verified successfully.',

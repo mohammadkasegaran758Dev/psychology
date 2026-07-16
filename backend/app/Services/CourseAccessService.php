@@ -12,28 +12,35 @@ class CourseAccessService
      */
     public function userHasAccess(?User $user, Course $course): bool
     {
-        // دوره رایگان
-        if ($course->is_free) {
+        if ($this->courseIsFree($course)) {
             return true;
         }
 
-        // کاربر لاگین نکرده
         if (!$user) {
             return false;
         }
 
-        // ادمین
         if ($user->role === 'admin') {
             return true;
         }
 
-        // enrollment فعال
+        return $this->hasActiveEnrollment($user, $course);
+    }
+
+    protected function courseIsFree(Course $course): bool
+    {
+        $finalPrice = (float) ($course->discount_price ?? $course->price);
+
+        return $finalPrice <= 0;
+    }
+
+    protected function hasActiveEnrollment(User $user, Course $course): bool
+    {
         return $user->enrollments()
             ->where('course_id', $course->id)
             ->where('status', 'active')
             ->where(function ($query) {
-                $query
-                    ->whereNull('expires_at')
+                $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })
             ->exists();

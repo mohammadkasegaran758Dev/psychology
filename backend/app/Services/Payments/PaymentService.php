@@ -2,13 +2,18 @@
 
 namespace App\Services\Payments;
 
-use App\Models\Enrollment;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\EnrollmentService;
 use Illuminate\Support\Str;
 
 class PaymentService
 {
+    public function __construct(
+        protected EnrollmentService $enrollmentService
+    ) {
+    }
+
     public function createPendingPayment(Order $order, int $userId): Payment
     {
         return Payment::create([
@@ -35,17 +40,7 @@ class PaymentService
             'paid_at' => now(),
         ]);
 
-        foreach ($order->items as $item) {
-            Enrollment::firstOrCreate([
-                'user_id' => $payment->user_id,
-                'course_id' => $item->course_id,
-                'order_id' => $order->id,
-            ], [
-                'access_type' => 'purchase',
-                'status' => 'active',
-                'expires_at' => null,
-            ]);
-        }
+        $this->enrollmentService->enrollFromOrder($order);
 
         return [
             'payment' => $payment,

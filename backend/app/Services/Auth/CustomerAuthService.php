@@ -12,7 +12,7 @@ class CustomerAuthService
         return User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => $data['password'],
+            'password' => Hash::make($data['password']),
             'role' => 'customer',
             'status' => 'active',
         ]);
@@ -23,6 +23,10 @@ class CustomerAuthService
         $user = User::where('email', $data['email'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
+            return null;
+        }
+
+        if ($user->status !== 'active') {
             return null;
         }
 

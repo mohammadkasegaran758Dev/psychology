@@ -23,7 +23,7 @@ class OrderController extends Controller
         $order->load([
             'user',
             'items.course',
-            'transactions'
+            'payments'
         ]);
 
         return response()->json($order);
