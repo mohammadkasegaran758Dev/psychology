@@ -58,6 +58,7 @@ class CourseContentService
         return [
             'has_access' => $hasAccess,
             'is_enrolled' => $isEnrolled,
+            'is_free_course' => $course->is_free,
             'sections' => $sections,
         ];
     }

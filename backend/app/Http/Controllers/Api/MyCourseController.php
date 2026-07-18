@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Content\CourseContentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -28,18 +29,11 @@ class MyCourseController extends Controller
         ]);
     }
 
-    public function content(Request $request, int $courseId): JsonResponse
+    public function content(Request $request, int $courseId, CourseContentService $courseContentService): JsonResponse
     {
         $course = $request->user()->courses()->where('courses.id', $courseId)->firstOrFail();
 
-        $course->load([
-            'sections' => function ($query) {
-                $query->orderBy('sort_order');
-            },
-            'sections.lessons' => function ($query) {
-                $query->orderBy('sort_order');
-            }
-        ]);
+        $content = $courseContentService->buildCourseView($course, $request->user());
 
         return response()->json([
             'message' => 'Course content fetched successfully.',
@@ -47,19 +41,10 @@ class MyCourseController extends Controller
                 'id' => $course->id,
                 'title' => $course->title,
                 'slug' => $course->slug,
-                'sections' => $course->sections->map(fn($section) => [
-                    'id' => $section->id,
-                    'title' => $section->title,
-                    'sort_order' => $section->sort_order,
-                    'lessons' => $section->lessons->map(fn($lesson) => [
-                        'id' => $lesson->id,
-                        'title' => $lesson->title,
-                        'sort_order' => $lesson->sort_order,
-                        'duration' => $lesson->duration_minutes,
-                        'video_url' => $lesson->video_url,
-                        'is_free_preview' => (bool) $lesson->is_free_preview,
-                    ]),
-                ]),
+                'has_access' => $content['has_access'],
+                'is_enrolled' => $content['is_enrolled'],
+                'is_free_course' => $content['is_free_course'],
+                'sections' => $content['sections'],
             ],
         ]);
     }

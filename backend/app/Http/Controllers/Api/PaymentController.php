@@ -66,7 +66,7 @@ class PaymentController extends Controller
                 'order_id' => $order->id,
                 'payment_status' => $payment->status,
                 'order_status' => $order->status,
-                'enrollment_created' => true,
+                'enrollment_created' => $order->status === 'paid',
             ],
         ]);
     }

@@ -1,16 +1,13 @@
 <?php
 
-namespace App\Services;
+namespace App\Policies;
 
 use App\Models\Course;
 use App\Models\User;
 
-class CourseAccessService
+class CoursePolicy
 {
-    /**
-     * بررسی دسترسی کاربر به دوره
-     */
-    public function userHasAccess(?User $user, Course $course): bool
+    public function viewCourseContent(?User $user, Course $course): bool
     {
         if ($course->is_free) {
             return true;
@@ -24,16 +21,6 @@ class CourseAccessService
             return true;
         }
 
-        return $this->hasActiveEnrollment($user, $course);
-    }
-
-    protected function courseIsFree(Course $course): bool
-    {
-        return $course->is_free;
-    }
-
-    protected function hasActiveEnrollment(User $user, Course $course): bool
-    {
         return $user->enrollments()
             ->where('course_id', $course->id)
             ->where('status', 'active')

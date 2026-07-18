@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lesson;
 use App\Services\CourseAccessService;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -25,12 +26,7 @@ class StreamController extends Controller
         | بررسی دسترسی کاربر به دوره
         |--------------------------------------------------------------------------
         */
-        if (
-            !$accessService->userHasAccess(
-                $request->user(),
-                $lesson->course
-            )
-        ) {
+        if (!Gate::check('viewCourseContent', $lesson->course)) {
             abort(
                 Response::HTTP_FORBIDDEN,
                 'شما به این دوره دسترسی ندارید.'
@@ -130,12 +126,7 @@ class StreamController extends Controller
         | بررسی دسترسی کاربر
         |--------------------------------------------------------------------------
         */
-        if (
-            !$accessService->userHasAccess(
-                $request->user(),
-                $lesson->course
-            )
-        ) {
+        if (!Gate::check('viewCourseContent', $lesson->course)) {
             abort(
                 Response::HTTP_FORBIDDEN,
                 'شما به این دوره دسترسی ندارید.'

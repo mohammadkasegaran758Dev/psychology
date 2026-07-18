@@ -40,8 +40,8 @@ class CourseController extends Controller
         $courses = $query->paginate($perPage);
 
         $courses->getCollection()->transform(function (Course $course): array {
-            $finalPrice = (float) ($course->discount_price ?? $course->price);
-            $isFree = $finalPrice <= 0 || (float) $course->price <= 0;
+            $finalPrice = (float) $course->getFinalPrice();
+            $isFree = $course->is_free;
 
             return [
                 'id' => $course->id,
@@ -94,9 +94,10 @@ class CourseController extends Controller
                 'status' => $course->status,
                 'price' => (float) $course->price,
                 'discount_price' => $course->discount_price !== null ? (float) $course->discount_price : null,
-                'final_price' => (float) ($course->discount_price ?? $course->price),
+                'final_price' => (float) $course->getFinalPrice(),
                 'has_access' => $content['has_access'],
                 'is_enrolled' => $content['is_enrolled'],
+                'is_free_course' => $content['is_free_course'],
                 'sections' => $content['sections'],
             ],
         ]);

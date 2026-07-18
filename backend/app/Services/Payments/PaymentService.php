@@ -28,6 +28,13 @@ class PaymentService
 
     public function verifyPayment(Payment $payment): array
     {
+        if ($payment->status === 'success' && $payment->order?->status === 'paid') {
+            return [
+                'payment' => $payment->fresh(),
+                'order' => $payment->order->fresh(),
+            ];
+        }
+
         $payment->update([
             'status' => 'success',
             'paid_at' => now(),
@@ -35,16 +42,19 @@ class PaymentService
         ]);
 
         $order = $payment->order;
-        $order->update([
-            'status' => 'paid',
-            'paid_at' => now(),
-        ]);
 
-        $this->enrollmentService->enrollFromOrder($order);
+        if ($order->status !== 'paid') {
+            $order->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+        }
+
+        $this->enrollmentService->enrollFromOrder($order->fresh());
 
         return [
-            'payment' => $payment,
-            'order' => $order,
+            'payment' => $payment->fresh(),
+            'order' => $order->fresh(),
         ];
     }
 }

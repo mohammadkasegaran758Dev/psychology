@@ -34,8 +34,25 @@ class Course extends Model
 
     public function getIsFreeAttribute(): bool
     {
-        return $this->price <= 0
-            || ($this->discount_price !== null && $this->discount_price <= 0);
+        $finalPrice = $this->getFinalPrice();
+
+        return $finalPrice <= 0;
+    }
+
+    public function getFinalPrice(): float
+    {
+        $price = (float) $this->price;
+        $discountPrice = $this->discount_price !== null ? (float) $this->discount_price : null;
+
+        if ($discountPrice === null) {
+            return $price;
+        }
+
+        if ($discountPrice > $price) {
+            return $price;
+        }
+
+        return $discountPrice;
     }
 
     // سازنده دوره

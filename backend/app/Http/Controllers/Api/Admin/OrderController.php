@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\EnrollmentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -44,21 +45,15 @@ class OrderController extends Controller
 
         $oldStatus = $order->status;
 
-        $order->update([
-            'status' => $data['status']
-        ]);
+        DB::transaction(function () use ($order, $data, $oldStatus, $enrollmentService): void {
+            $order->update([
+                'status' => $data['status'],
+            ]);
 
-        /*
-        فقط زمانی enrollment بساز
-        که:
-        pending -> paid
-        */
-        if (
-            $oldStatus !== 'paid'
-            && $data['status'] === 'paid'
-        ) {
-            $enrollmentService->enrollFromOrder($order);
-        }
+            if ($oldStatus !== 'paid' && $data['status'] === 'paid') {
+                $enrollmentService->enrollFromOrder($order);
+            }
+        });
 
         return response()->json([
             'message' => 'وضعیت سفارش بروزرسانی شد.'

@@ -7,9 +7,6 @@ namespace App\Http\Controllers\Api\Admin;
 
 
 use App\Http\Controllers\Api\BaseApiController;
-use App\Http\Controllers\Controller;
-
-
 use App\Http\Requests\admin\StoreLessonRequest;
 use App\Http\Requests\admin\UpdateLessonRequest;
 use App\Models\Lesson;
@@ -17,8 +14,8 @@ use App\Services\FileUploader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 
 class LessonController extends BaseApiController
@@ -42,7 +39,7 @@ class LessonController extends BaseApiController
                 $query->where('section_id', $request->section_id);
             }
 
-            return response()->json(
+            return $this->successResponse(
                 $query->orderBy('sort_order')->get()
             );
 
@@ -67,7 +64,7 @@ class LessonController extends BaseApiController
 
             $lesson = Lesson::create($data);
 
-            return response()->json($lesson, 201);
+            return $this->successResponse($lesson, Response::HTTP_CREATED);
         } catch (\Throwable $th) {
             return $this->handleException($th);
 
@@ -78,7 +75,7 @@ class LessonController extends BaseApiController
     public function show(Lesson $lesson)
     {
         try {
-            return response()->json($lesson);
+            return $this->successResponse($lesson);
         } catch (\Throwable $th) {
             return $this->handleException($th);
 
@@ -98,7 +95,13 @@ class LessonController extends BaseApiController
                 $filesToDelete[] = $lesson->video_url;
             }
 
-            // ... همین کار را برای audio و file انجام دهید
+            if (isset($data['audio_url']) && $data['audio_url'] !== $lesson->audio_url) {
+                $filesToDelete[] = $lesson->audio_url;
+            }
+
+            if (isset($data['file_path']) && $data['file_path'] !== $lesson->file_path) {
+                $filesToDelete[] = $lesson->file_path;
+            }
 
             // آپدیت دیتابیس
             if (isset($data['title'])) {
@@ -111,10 +114,7 @@ class LessonController extends BaseApiController
                 $this->uploader->delete($filePath);
             }
 
-            return response()->json([
-                'message' => 'درس با موفقیت بروزرسانی شد.',
-                'data' => $lesson
-            ], Response::HTTP_OK);
+            return $this->successResponse($lesson, Response::HTTP_OK);
 
         } catch (\Throwable $th) {
             return $this->handleException($th);
@@ -124,19 +124,36 @@ class LessonController extends BaseApiController
     public function reorder(Request $request)
     {
         $data = $request->validate([
+            'section_id' => ['required', 'exists:course_sections,id'],
             'ids' => ['required', 'array'],
             'ids.*' => ['integer', 'exists:lessons,id'],
         ]);
 
-        DB::transaction(function () use ($data) {
-            foreach ($data['ids'] as $index => $id) {
-                Lesson::whereKey($id)->update([
-                    'sort_order' => $index + 1,
-                ]);
+        $sectionId = (int) $data['section_id'];
+        $lessonIds = $data['ids'];
+
+        $validLessonIds = Lesson::query()
+            ->where('section_id', $sectionId)
+            ->whereIn('id', $lessonIds)
+            ->pluck('id')
+            ->all();
+
+        if (count($validLessonIds) !== count($lessonIds)) {
+            throw new \InvalidArgumentException('One or more lessons do not belong to the selected section.');
+        }
+
+        DB::transaction(function () use ($lessonIds, $sectionId): void {
+            foreach ($lessonIds as $index => $id) {
+                Lesson::query()
+                    ->where('id', $id)
+                    ->where('section_id', $sectionId)
+                    ->update([
+                        'sort_order' => $index + 1,
+                    ]);
             }
         });
 
-        return response()->json([
+        return $this->successResponse([
             'message' => 'Lessons reordered successfully',
         ]);
     }
@@ -149,7 +166,7 @@ class LessonController extends BaseApiController
         try {
             $lesson->delete();
 
-            return response()->json([
+            return $this->successResponse([
                 'message' => 'درس با موفقیت (به صورت موقت) حذف شد.'
             ], Response::HTTP_OK);
 
@@ -178,7 +195,7 @@ class LessonController extends BaseApiController
             // ۲. حذف دائمی رکورد از دیتابیس
             $lesson->forceDelete();
 
-            return response()->json([
+            return $this->successResponse([
                 'message' => 'درس و تمامی فایل‌های مربوط به آن برای همیشه حذف شدند.'
             ], Response::HTTP_OK);
 

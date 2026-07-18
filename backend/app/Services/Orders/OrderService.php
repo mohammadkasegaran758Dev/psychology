@@ -41,7 +41,7 @@ class OrderService
             return $pendingOrder;
         }
 
-        $finalPrice = (float) ($course->discount_price ?? $course->price);
+        $finalPrice = (float) $course->getFinalPrice();
         $subtotal = (int) round((float) $course->price);
         $discountAmount = max(0, $subtotal - (int) round($finalPrice));
         $totalAmount = (int) round($finalPrice);
