@@ -42,6 +42,8 @@ return new class extends Migration {
             $table->integer('sort_order')
                 ->default(0);
 
+
+
             $table->timestamps();
             $table->softDeletes();
         });
@@ -49,6 +51,10 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('lessons');
+        // Schema::dropIfExists('lessons');
+
+        Schema::table('lessons', function (Blueprint $table) {
+            $table->dropSoftDeletes();
+        });
     }
 };

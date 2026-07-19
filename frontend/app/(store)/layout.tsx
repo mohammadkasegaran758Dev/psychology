@@ -1,31 +1,27 @@
-// src/app/layout.tsx
-import type { Metadata } from "next";
-import { ReactNode } from "react";
+// app/(store)/layout.tsx
+import type { ReactNode } from "react";
 
-import { siteConfig } from "@/config/site";
-import { AppProvider } from "@/providers/app-provider";
+import { Header } from "@/components/layout/header"; // اگر مسیر دیگری دارد، اصلاح کن
+// import { Footer } from "@/components/layout/footer"; // اگر Footer نداری، این import و JSX را حذف کن
+import { AppProvider } from "@/providers/app-provider"; // اگر در Providers ریشه‌ای هست، این را هم می‌توانی حذف کنی
 
-import "../globals.css";
-
-export const metadata: Metadata = {
-  title: {
-    default: siteConfig.name,
-    template: `%s | ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  metadataBase: new URL(siteConfig.url),
-};
-
-type RootLayoutProps = {
+type StoreLayoutProps = {
   children: ReactNode;
 };
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function StoreLayout({ children }: StoreLayoutProps) {
   return (
-    <html lang={siteConfig.defaultLocale} dir={siteConfig.direction}>
-      <body>
-        <AppProvider>{children}</AppProvider>
-      </body>
-    </html>
+    <AppProvider>
+      <div className="flex min-h-screen flex-col">
+        {/* Header عمومی فروشگاه */}
+        <Header />
+
+        {/* محتوای صفحه‌ها */}
+        <main className="flex-1">{children}</main>
+
+        {/* Footer فروشگاه - در صورت وجود */}
+        {/* <Footer /> */}
+      </div>
+    </AppProvider>
   );
 }
