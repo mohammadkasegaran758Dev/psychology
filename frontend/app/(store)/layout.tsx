@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 import { siteConfig } from "@/config/site";
 import { AppProvider } from "@/providers/app-provider";
 
-import "./globals.css";
+import "../globals.css";
 
 export const metadata: Metadata = {
   title: {

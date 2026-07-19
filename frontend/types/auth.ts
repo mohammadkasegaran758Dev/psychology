@@ -13,8 +13,12 @@ export type RegisterInput = {
   password_confirmation: string;
 };
 
-export type AuthResponse = {
+export type AuthPayload = {
   user: User;
-  token?: string;
-  message?: string;
+  token: string;
+};
+
+export type AuthResponse = {
+  message: string;
+  data: AuthPayload;
 };

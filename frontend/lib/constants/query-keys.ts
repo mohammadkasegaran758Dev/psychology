@@ -16,6 +16,8 @@ export const queryKeys = {
   categories: {
     all: ["categories"] as const,
     lists: () => [...queryKeys.categories.all, "list"] as const,
+    list: (params?: Record<string, unknown>) =>
+      [...queryKeys.categories.lists(), params ?? {}] as const,
     detail: (slug: string) =>
       [...queryKeys.categories.all, "detail", slug] as const,
   },

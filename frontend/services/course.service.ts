@@ -1,39 +1,27 @@
 // src/services/course.service.ts
-import { endpoints } from "@/lib/api/endpoints";
-import { apiClient } from "@/lib/api/client";
-import type { Course } from "@/types/course";
-import type { PaginatedResponse } from "@/types/api";
-
+import { api } from "@/lib/api-client";
+import type {
+  Course,
+  CourseDetailsResponse,
+  // GetCoursesParams,
+  PaginatedResponse,
+} from "@/types/course";
 export type GetCoursesParams = {
   page?: number;
-  limit?: number;
-  category?: string;
+  per_page?: number;
+  category_id?: number | string;
   search?: string;
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc";
 };
-
-function buildCoursesQuery(params?: GetCoursesParams) {
-  const searchParams = new URLSearchParams();
-
-  if (!params) return "";
-
-  if (params.page) searchParams.set("page", String(params.page));
-  if (params.limit) searchParams.set("limit", String(params.limit));
-  if (params.category) searchParams.set("category", params.category);
-  if (params.search) searchParams.set("search", params.search);
-
-  const query = searchParams.toString();
-  return query ? `?${query}` : "";
-}
-
 export const courseService = {
-  getCourses: async (params?: GetCoursesParams) => {
-    const query = buildCoursesQuery(params);
-    return apiClient.get<PaginatedResponse<Course>>(
-      `${endpoints.courses.list}${query}`,
-    );
+  getCourses: (params?: GetCoursesParams) => {
+    // حالا api.get<PaginatedResponse<Course>> => Promise<PaginatedResponse<Course>>
+    return api.get<PaginatedResponse<Course>>("/courses", {
+      params,
+    });
   },
 
-  getCourseBySlug: async (slug: string) => {
-    return apiClient.get<Course>(endpoints.courses.detail(slug));
+  getCourseBySlug: (slug: string) => {
+    return api.get<CourseDetailsResponse>(`/courses/${slug}`);
   },
 };

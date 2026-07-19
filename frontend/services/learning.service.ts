@@ -10,11 +10,13 @@ export type CourseContentResponse = {
 };
 
 export const learningService = {
-  getMyCourses: async () => {
+  getMyCourses: () => {
+    // apiClient.get مستقیماً آرایه Course[] را برمی‌گرداند
     return apiClient.get<Course[]>(endpoints.learning.myCourses);
   },
 
-  getCourseContent: async (courseId: string | number) => {
+  getCourseContent: (courseId: string | number) => {
+    // apiClient.get مستقیماً CourseContentResponse را برمی‌گرداند
     return apiClient.get<CourseContentResponse>(
       endpoints.learning.courseContent(courseId),
     );

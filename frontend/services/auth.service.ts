@@ -1,23 +1,26 @@
 // src/services/auth.service.ts
-import { endpoints } from "@/lib/api/endpoints";
-import { apiClient } from "@/lib/api/client";
+import { apiClient } from "@/lib/api/api-client";
 import type { AuthResponse, LoginInput, RegisterInput } from "@/types/auth";
 import type { User } from "@/types/user";
 
 export const authService = {
-  login: async (payload: LoginInput) => {
-    return apiClient.post<AuthResponse>(endpoints.auth.login, payload);
+  async login(payload: LoginInput) {
+    const response = await apiClient.post<AuthResponse>("/login", payload);
+    return response.data;
   },
 
-  register: async (payload: RegisterInput) => {
-    return apiClient.post<AuthResponse>(endpoints.auth.register, payload);
+  async register(payload: RegisterInput) {
+    const response = await apiClient.post<AuthResponse>("/register", payload);
+    return response.data;
   },
 
-  me: async () => {
-    return apiClient.get<User>(endpoints.auth.me);
+  async logout() {
+    const response = await apiClient.post<{ message: string }>("/logout");
+    return response.data;
   },
 
-  logout: async () => {
-    return apiClient.post<{ success: boolean }>(endpoints.auth.logout);
+  async me() {
+    const response = await apiClient.get<User>("/me");
+    return response.data;
   },
 };
