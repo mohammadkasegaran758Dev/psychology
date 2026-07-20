@@ -1,12 +1,13 @@
 // src/services/order.service.ts
 import { endpoints } from "@/lib/api/endpoints";
 import { apiClient } from "@/lib/api/client";
-import type { PaginatedResponse } from "@/types/api";
+import { unwrapApiResponse } from "@/lib/http/unwrap";
+import type { ApiResponse, PaginationMeta } from "@/lib/http/types";
 import type { Order, CreateOrderInput } from "@/types/order";
 
 export type GetOrdersParams = {
   page?: number;
-  limit?: number;
+  per_page?: number;
 };
 
 function buildOrdersQuery(params?: GetOrdersParams) {
@@ -15,7 +16,7 @@ function buildOrdersQuery(params?: GetOrdersParams) {
   if (!params) return "";
 
   if (params.page) searchParams.set("page", String(params.page));
-  if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.per_page) searchParams.set("per_page", String(params.per_page));
 
   const query = searchParams.toString();
   return query ? `?${query}` : "";
@@ -23,17 +24,25 @@ function buildOrdersQuery(params?: GetOrdersParams) {
 
 export const orderService = {
   createOrder: async (payload: CreateOrderInput) => {
-    return apiClient.post<Order>(endpoints.orders.create, payload);
+    const response = await apiClient.post<ApiResponse<Order>>(
+      endpoints.orders.create,
+      payload,
+    );
+    return unwrapApiResponse(response.data);
   },
 
   getMyOrders: async (params?: GetOrdersParams) => {
     const query = buildOrdersQuery(params);
-    return apiClient.get<PaginatedResponse<Order>>(
-      `${endpoints.orders.mine}${query}`,
-    );
+    const response = await apiClient.get<
+      ApiResponse<{ data: Order[]; meta: PaginationMeta }>
+    >(`${endpoints.orders.mine}${query}`);
+    return unwrapApiResponse(response.data);
   },
 
   getOrderById: async (id: string | number) => {
-    return apiClient.get<Order>(endpoints.orders.detail(id));
+    const response = await apiClient.get<ApiResponse<Order>>(
+      endpoints.orders.detail(id),
+    );
+    return unwrapApiResponse(response.data);
   },
 };

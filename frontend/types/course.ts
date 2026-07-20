@@ -29,6 +29,7 @@ export type Course = {
   short_description?: string | null;
   description?: string | null;
   cover_image?: string | null;
+  thumbnail?: string | null;
   price: number | string;
   discount_price?: number | string | null;
   status?: string;

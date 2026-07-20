@@ -1,12 +1,13 @@
 // src/services/category.service.ts
 import { endpoints } from "@/lib/api/endpoints";
 import { apiClient } from "@/lib/api/client";
+import { unwrapApiResponse } from "@/lib/http/unwrap";
+import type { ApiResponse, PaginationMeta } from "@/lib/http/types";
 import type { Category } from "@/types/category";
-import type { PaginatedResponse } from "@/types/api";
 
 export type GetCategoriesParams = {
   page?: number;
-  limit?: number;
+  per_page?: number;
 };
 
 function buildCategoriesQuery(params?: GetCategoriesParams) {
@@ -15,7 +16,7 @@ function buildCategoriesQuery(params?: GetCategoriesParams) {
   if (!params) return "";
 
   if (params.page) searchParams.set("page", String(params.page));
-  if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.per_page) searchParams.set("per_page", String(params.per_page));
 
   const query = searchParams.toString();
   return query ? `?${query}` : "";
@@ -24,12 +25,16 @@ function buildCategoriesQuery(params?: GetCategoriesParams) {
 export const categoryService = {
   getCategories: async (params?: GetCategoriesParams) => {
     const query = buildCategoriesQuery(params);
-    return apiClient.get<PaginatedResponse<Category>>(
-      `${endpoints.categories.list}${query}`,
-    );
+    const response = await apiClient.get<
+      ApiResponse<{ data: Category[]; meta: PaginationMeta }>
+    >(`${endpoints.categories.list}${query}`);
+    return unwrapApiResponse(response.data);
   },
 
   getCategoryBySlug: async (slug: string) => {
-    return apiClient.get<Category>(endpoints.categories.detail(slug));
+    const response = await apiClient.get<ApiResponse<Category>>(
+      endpoints.categories.detail(slug),
+    );
+    return unwrapApiResponse(response.data);
   },
 };

@@ -18,6 +18,7 @@ import { PlayCircle, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Image from "next/image";
 
 export default function CourseDetailsPage() {
   const params = useParams();
@@ -92,10 +93,12 @@ export default function CourseDetailsPage() {
       </div>
     );
   }
-
-  const finalPrice = Number(course.final_price ?? course.price ?? 0);
+  console.log("course", course);
+  const finalPrice = Number(course.data.final_price ?? course.price ?? 0);
   const isFree = course.is_free || finalPrice <= 0;
-
+  const imageUrl = course?.data?.thumbnail
+    ? `${process.env.NEXT_PUBLIC_API_URL_Image}/storage/${course?.data?.thumbnail}`
+    : "/placeholder-course.jpg";
   return (
     <div className="container mx-auto grid grid-cols-1 gap-8 p-6 lg:grid-cols-3">
       {/* محتوا */}
@@ -160,10 +163,13 @@ export default function CourseDetailsPage() {
         <Card className="sticky top-6">
           <CardContent className="space-y-6 p-6">
             <div className="overflow-hidden rounded-md">
-              <img
-                src={course.cover_image || "/placeholder-course.jpg"}
-                alt={course.title}
-                className="h-52 w-full object-cover"
+              <Image
+                src={imageUrl}
+                alt={course?.data?.title}
+                width={320}
+                height={180}
+                unoptimized
+                className="max-h-full max-w-full object-contain"
               />
             </div>
 

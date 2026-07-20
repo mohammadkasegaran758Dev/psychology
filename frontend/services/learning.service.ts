@@ -1,6 +1,8 @@
 // src/services/learning.service.ts
 import { endpoints } from "@/lib/api/endpoints";
 import { apiClient } from "@/lib/api/client";
+import { unwrapApiResponse } from "@/lib/http/unwrap";
+import type { ApiResponse } from "@/lib/http/types";
 import type { Course } from "@/types/course";
 import type { Lesson } from "@/types/lesson";
 
@@ -10,15 +12,17 @@ export type CourseContentResponse = {
 };
 
 export const learningService = {
-  getMyCourses: () => {
-    // apiClient.get مستقیماً آرایه Course[] را برمی‌گرداند
-    return apiClient.get<Course[]>(endpoints.learning.myCourses);
+  getMyCourses: async () => {
+    const response = await apiClient.get<ApiResponse<Course[]>>(
+      endpoints.learning.myCourses,
+    );
+    return unwrapApiResponse(response.data);
   },
 
-  getCourseContent: (courseId: string | number) => {
-    // apiClient.get مستقیماً CourseContentResponse را برمی‌گرداند
-    return apiClient.get<CourseContentResponse>(
+  getCourseContent: async (courseId: string | number) => {
+    const response = await apiClient.get<ApiResponse<CourseContentResponse>>(
       endpoints.learning.courseContent(courseId),
     );
+    return unwrapApiResponse(response.data);
   },
 };
