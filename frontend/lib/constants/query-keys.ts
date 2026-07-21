@@ -41,4 +41,46 @@ export const queryKeys = {
     courseContent: (courseId: string | number) =>
       ["learning", "course-content", courseId] as const,
   },
+
+  admin: {
+    auth: {
+      me: ["admin", "auth", "me"] as const,
+    },
+    courses: {
+      all: ["admin", "courses"] as const,
+      lists: () => [...queryKeys.admin.courses.all, "list"] as const,
+      list: (params?: Record<string, unknown>) =>
+        [...queryKeys.admin.courses.lists(), params ?? {}] as const,
+      detail: (id: string | number) =>
+        [...queryKeys.admin.courses.all, "detail", id] as const,
+    },
+    lessons: {
+      all: ["admin", "lessons"] as const,
+      byCourse: (courseId: string | number) =>
+        [...queryKeys.admin.lessons.all, "course", courseId] as const,
+      detail: (id: string | number) =>
+        [...queryKeys.admin.lessons.all, "detail", id] as const,
+    },
+    sections: {
+      all: ["admin", "sections"] as const,
+      byCourse: (courseId: string | number) =>
+        [...queryKeys.admin.sections.all, "course", courseId] as const,
+    },
+    categories: {
+      all: ["admin", "categories"] as const,
+      lists: () => [...queryKeys.admin.categories.all, "list"] as const,
+      list: (params?: Record<string, unknown>) =>
+        [...queryKeys.admin.categories.lists(), params ?? {}] as const,
+      detail: (id: string | number) =>
+        [...queryKeys.admin.categories.all, "detail", id] as const,
+    },
+    orders: {
+      all: ["admin", "orders"] as const,
+      lists: () => [...queryKeys.admin.orders.all, "list"] as const,
+      list: (params?: Record<string, unknown>) =>
+        [...queryKeys.admin.orders.lists(), params ?? {}] as const,
+      detail: (id: string | number) =>
+        [...queryKeys.admin.orders.all, "detail", id] as const,
+    },
+  },
 } as const;

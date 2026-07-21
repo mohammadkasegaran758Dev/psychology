@@ -1,110 +1,80 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
-import {
-  getAdminToken,
-  removeAdminToken,
-} from "@/features/admin/auth/lib/admin-auth-storage";
-import { getAuthToken, removeAuthToken } from "@/lib/auth/token";
-import type { ApiErrorPayload } from "./types";
+// src/lib/http/create-api-client.ts
+import axios, {
+  type AxiosInstance,
+  type AxiosError,
+  type InternalAxiosRequestConfig,
+} from "axios";
+import { ApiError, ApiErrorPayload } from "@/lib/http/types";
 
-export type ApiClientMode = "store" | "admin";
+export type ApiClientScope = "admin" | "store";
 
-type CreateApiClientOptions = {
-  mode: ApiClientMode;
-  baseURL?: string;
-  redirectTo?: string;
+export type CreateApiClientOptions = {
+  scope: ApiClientScope;
+  getToken: () => string | null;
+  clearToken: () => void;
+  /** مسیر ریدایرکت بعد از 401؛ اگر null باشد فقط توکن پاک می‌شود */
+  unauthorizedRedirect: string | null;
 };
 
-function getToken(mode: ApiClientMode): string | null {
-  if (mode === "admin") {
-    return getAdminToken();
-  }
-
-  return getAuthToken();
+function resolveBaseURL() {
+  return (
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:8000/api"
+  );
 }
 
-function removeToken(mode: ApiClientMode): void {
-  if (mode === "admin") {
-    removeAdminToken();
-    return;
-  }
-
-  removeAuthToken();
-}
-
-function buildErrorPayload(error: unknown): ApiErrorPayload {
-  if (axios.isAxiosError(error)) {
-    const responseData = error.response?.data as ApiErrorPayload | undefined;
-    return {
-      message: responseData?.message ?? error.message ?? "Request failed",
-      errors: responseData?.errors,
-    };
-  }
-
-  return { message: "Request failed" };
-}
-
-export function createApiClient({
-  mode,
-  baseURL,
-  redirectTo,
-}: CreateApiClientOptions): AxiosInstance {
-  const client = axios.create({
-    baseURL:
-      baseURL ??
-      process.env.NEXT_PUBLIC_API_URL ??
-      process.env.NEXT_PUBLIC_API_BASE_URL ??
-      "http://localhost:8000/api",
+export function createApiClient(
+  options: CreateApiClientOptions,
+): AxiosInstance {
+  const instance = axios.create({
+    baseURL: resolveBaseURL(),
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
+    withCredentials: true,
   });
 
-  client.interceptors.request.use((config) => {
-    const token = getToken(mode);
+  instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    const token = options.getToken();
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // برای FormData نباید Content-Type دستی JSON بماند
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (config.headers && "Content-Type" in config.headers) {
+        delete config.headers["Content-Type"];
+      }
     }
 
     return config;
   });
 
-  client.interceptors.response.use(
+  instance.interceptors.response.use(
     (response) => response,
-    (error) => {
+    (error: AxiosError<ApiErrorPayload>) => {
       const status = error.response?.status ?? 500;
-      const payload = buildErrorPayload(error);
-
+      const data = error.response?.data;
+      const message = data?.message || error.message || "Request failed.";
+        
       if (status === 401) {
-        removeToken(mode);
+        options.clearToken();
 
-        if (typeof window !== "undefined" && redirectTo) {
-          window.location.href = redirectTo;
+        if (
+          options.unauthorizedRedirect &&
+          typeof window !== "undefined" &&
+          !window.location.pathname.startsWith(options.unauthorizedRedirect)
+        ) {
+          window.location.href = options.unauthorizedRedirect;
         }
       }
 
-      return Promise.reject({
-        message: payload.message,
-        errors: payload.errors,
-        status,
-        data: error.response?.data,
-      });
+      return Promise.reject(new ApiError(message, status, data));
     },
   );
 
-  return client;
+  return instance;
 }
-
-export const adminApi = createApiClient({
-  mode: "admin",
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL,
-  redirectTo: "/admin/login",
-});
-
-export const storeApi = createApiClient({
-  mode: "store",
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL,
-  redirectTo: "/login",
-});

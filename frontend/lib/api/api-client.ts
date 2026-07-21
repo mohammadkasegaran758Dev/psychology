@@ -1,7 +1,6 @@
 // src/lib/api/api-client.ts
-export {
-  HttpApiError as ApiError,
-  adminApi,
-  storeApi,
-} from "@/lib/http/create-api-client";
-export const apiClient = storeApi;
+/**
+ * @deprecated Use `storeApi` + `ApiError` from `@/lib/http` instead.
+ */
+export { storeApi as apiClient } from "@/lib/http/store-api";
+export { ApiError } from "@/lib/http/types";

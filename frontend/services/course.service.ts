@@ -1,36 +1,28 @@
 // src/services/course.service.ts
-import { api } from "@/lib/api-client";
-import { unwrapApiResponse } from "@/lib/http/unwrap";
-import type { ApiResponse } from "@/lib/http/types";
+import { storeApi } from "@/lib/http/store-api";
+import { unwrapApiResponse, unwrapPaginated } from "@/lib/http/unwrap";
 import type {
   Course,
   CourseDetailsResponse,
-  PaginatedResponse,
+  GetCoursesParams,
 } from "@/types/course";
-
-export type GetCoursesParams = {
-  page?: number;
-  per_page?: number;
-  category_id?: number | string;
-  search?: string;
-  sort?: "newest" | "oldest" | "price_asc" | "price_desc";
-};
 
 export const courseService = {
   getCourses: async (params?: GetCoursesParams) => {
-    const response = await api.get<ApiResponse<PaginatedResponse<Course>>>(
-      "/courses",
-      {
-        params,
-      },
-    );
-    return unwrapApiResponse(response.data);
+    // اگر GetCoursesParams هنوز limit دارد، همین‌جا map کن:
+    const query = {
+      ...params,
+      per_page:
+        (params as any)?.per_page ?? (params as any)?.limit ?? undefined,
+      limit: undefined,
+    };
+
+    const res = await storeApi.get("/courses", { params: query });
+    return unwrapPaginated<Course>(res as any);
   },
 
   getCourseBySlug: async (slug: string) => {
-    const response = await api.get<ApiResponse<CourseDetailsResponse>>(
-      `/courses/${slug}`,
-    );
-    return unwrapApiResponse(response.data);
+    const res = await storeApi.get(`/courses/${slug}`);
+    return unwrapApiResponse<CourseDetailsResponse>(res as any);
   },
 };

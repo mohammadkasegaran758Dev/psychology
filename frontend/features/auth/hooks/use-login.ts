@@ -12,9 +12,23 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: authService.login,
+    // onSuccess: async (response) => {
+    //   setAuthToken(response.data.token);
+    //   await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+    // },
+
     onSuccess: async (response) => {
-      setAuthToken(response.data.token);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+      const token = response?.data?.token;
+
+      if (!token) {
+        throw new Error("Login response missing token");
+      }
+
+      setAuthToken(token);
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.auth.me,
+      });
     },
   });
 }

@@ -1,8 +1,7 @@
 // src/services/payment.service.ts
 import { endpoints } from "@/lib/api/endpoints";
-import { apiClient } from "@/lib/api/client";
-import { unwrapApiResponse } from "@/lib/http/unwrap";
-import type { ApiResponse, PaginationMeta } from "@/lib/http/types";
+import { storeApi } from "@/lib/http/store-api";
+import { unwrapApiResponse, unwrapPaginated } from "@/lib/http/unwrap";
 import type {
   CreatePaymentInput,
   Payment,
@@ -17,45 +16,32 @@ export type GetPaymentsParams = {
 
 function buildPaymentsQuery(params?: GetPaymentsParams) {
   const searchParams = new URLSearchParams();
-
-  if (!params) return "";
-
-  if (params.page) searchParams.set("page", String(params.page));
-  if (params.per_page) searchParams.set("per_page", String(params.per_page));
-
-  const query = searchParams.toString();
-  return query ? `?${query}` : "";
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.per_page) searchParams.set("per_page", String(params.per_page));
+  const q = searchParams.toString();
+  return q ? `?${q}` : "";
 }
 
 export const paymentService = {
   createPayment: async (payload: CreatePaymentInput) => {
-    const response = await apiClient.post<ApiResponse<Payment>>(
-      endpoints.payments.create,
-      payload,
-    );
-    return unwrapApiResponse(response.data);
+    const res = await storeApi.post(endpoints.payments.create, payload);
+    return unwrapApiResponse<Payment>(res as any);
   },
 
   getMyPayments: async (params?: GetPaymentsParams) => {
-    const query = buildPaymentsQuery(params);
-    const response = await apiClient.get<
-      ApiResponse<{ data: Payment[]; meta: PaginationMeta }>
-    >(`${endpoints.payments.mine}${query}`);
-    return unwrapApiResponse(response.data);
+    const res = await storeApi.get(
+      `${endpoints.payments.mine}${buildPaymentsQuery(params)}`,
+    );
+    return unwrapPaginated<Payment>(res as any);
   },
 
   getPaymentById: async (id: string | number) => {
-    const response = await apiClient.get<ApiResponse<Payment>>(
-      endpoints.payments.detail(id),
-    );
-    return unwrapApiResponse(response.data);
+    const res = await storeApi.get(endpoints.payments.detail(id));
+    return unwrapApiResponse<Payment>(res as any);
   },
 
   verifyPayment: async (payload: VerifyPaymentInput) => {
-    const response = await apiClient.post<ApiResponse<VerifyPaymentResponse>>(
-      endpoints.payments.verify,
-      payload,
-    );
-    return unwrapApiResponse(response.data);
+    const res = await storeApi.post(endpoints.payments.verify, payload);
+    return unwrapApiResponse<VerifyPaymentResponse>(res as any);
   },
 };

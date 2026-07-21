@@ -1,8 +1,7 @@
 // src/services/learning.service.ts
 import { endpoints } from "@/lib/api/endpoints";
-import { apiClient } from "@/lib/api/client";
+import { storeApi } from "@/lib/http/store-api";
 import { unwrapApiResponse } from "@/lib/http/unwrap";
-import type { ApiResponse } from "@/lib/http/types";
 import type { Course } from "@/types/course";
 import type { Lesson } from "@/types/lesson";
 
@@ -13,16 +12,12 @@ export type CourseContentResponse = {
 
 export const learningService = {
   getMyCourses: async () => {
-    const response = await apiClient.get<ApiResponse<Course[]>>(
-      endpoints.learning.myCourses,
-    );
-    return unwrapApiResponse(response.data);
+    const res = await storeApi.get(endpoints.learning.myCourses);
+    return unwrapApiResponse<Course[]>(res as any);
   },
 
   getCourseContent: async (courseId: string | number) => {
-    const response = await apiClient.get<ApiResponse<CourseContentResponse>>(
-      endpoints.learning.courseContent(courseId),
-    );
-    return unwrapApiResponse(response.data);
+    const res = await storeApi.get(endpoints.learning.courseContent(courseId));
+    return unwrapApiResponse<CourseContentResponse>(res as any);
   },
 };

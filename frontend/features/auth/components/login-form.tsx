@@ -45,6 +45,7 @@ export function LoginForm() {
     } catch (err) {
       // اگر خطای ولیدیشن Laravel بود، روی فیلدها مپ می‌شود
       const handled = handleLaravelErrors(err, form.setError);
+      console.log("handled", handled);
       if (!handled) {
         setGeneralError("ایمیل یا رمز عبور اشتباه است.");
       }

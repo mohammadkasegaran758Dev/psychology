@@ -8,6 +8,7 @@ export function handleLaravelErrors<TFieldValues extends FieldValues>(
 ): boolean {
   if (error instanceof ApiError && error.status === 422) {
     const data = error.data as { errors?: Record<string, string[]> };
+    console.log("data", data);
     if (data?.errors) {
       Object.entries(data.errors).forEach(([key, messages]) => {
         if (messages && messages.length > 0) {
@@ -15,8 +16,10 @@ export function handleLaravelErrors<TFieldValues extends FieldValues>(
             type: "server",
             message: messages[0], // اولین پیام خطای ارسالی از سمت سرور
           });
+          console.log("messages", setError);
         }
       });
+
       return true;
     }
   }
